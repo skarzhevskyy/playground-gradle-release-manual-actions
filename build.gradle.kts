@@ -26,7 +26,7 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-actuator")
 	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.8")
 
-	implementation("org.apache.tomcat.embed:tomcat-embed-core:10.1.42") {
+	implementation("org.apache.tomcat.embed:tomcat-embed-core:10.1.43") {
 		exclude(group = "org.apache.tomcat", module = "tomcat-annotations-api")
 	}
 
