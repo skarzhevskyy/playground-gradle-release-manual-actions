@@ -1,1 +1,1 @@
-rootProject.name = "template-java-gradle-spring"
+rootProject.name = "playground-gradle-release-manual-actions"

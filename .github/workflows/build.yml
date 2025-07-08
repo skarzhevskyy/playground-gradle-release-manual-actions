@@ -52,3 +52,12 @@ jobs:
           echo "Java version: $(java -version 2>&1 | head -1)"
           echo "Gradle version: $(./gradlew --version | grep 'Gradle' | head -1)"
           ./gradlew build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: jar
+          path: |
+            build/libs
+            !build/libs/*-plain.jar
+          retention-days: 30

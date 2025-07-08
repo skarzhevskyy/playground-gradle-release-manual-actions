@@ -1,11 +1,11 @@
 plugins {
 	java
-	id("org.springframework.boot") version "3.5.3"
-	// Dependencies list and diff automation in command line and CI/CD
+	application
 	id("org.cyclonedx.bom") version "2.3.1"
+	id("com.github.johnrengelman.shadow") version "8.1.1"
 }
 
-group = "com.example.template-java-gradle-spring"
+group = "com.example.playground-gradle-release-manual-actions"
 version = "0.0.1-SNAPSHOT"
 
 java {
@@ -19,33 +19,22 @@ repositories {
 }
 
 dependencies {
-	implementation(platform(org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES))
-	implementation("org.springframework.boot:spring-boot-starter-web")
-	implementation("org.springframework.boot:spring-boot-starter-webflux")
-	implementation("org.springframework.boot:spring-boot-starter-validation")
-	implementation("org.springframework.boot:spring-boot-starter-actuator")
-	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.8")
+	implementation("info.picocli:picocli:4.7.0")
+}
 
-	implementation("org.apache.tomcat.embed:tomcat-embed-core:10.1.42") {
-		exclude(group = "org.apache.tomcat", module = "tomcat-annotations-api")
+application {
+	mainClass.set("com.example.demo.DemoApplication")
+}
+
+tasks.jar {
+	manifest {
+		attributes("Implementation-Version" to project.version)
+		attributes("Main-Class" to "com.example.demo.DemoApplication")
 	}
-
-	implementation("com.google.guava:guava:33.4.8-jre")
-	implementation("org.apache.commons:commons-lang3")
-	// Runtime validation alternative...
-	implementation("org.assertj:assertj-core:3.27.3")
-
-	// Tests
-	testImplementation("org.springframework.boot:spring-boot-starter-test") {
-		exclude(group = "org.xmlunit", module = "xmlunit-core")
-		exclude(group = "com.jayway.jsonpath", module = "json-path")
-	}
-	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
 tasks.withType<JavaCompile> {
 	options.isDeprecation = true
-	// Enables http unit tests
 	options.compilerArgs.add("-parameters")
 }
 
