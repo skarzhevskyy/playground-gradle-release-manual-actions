@@ -33,6 +33,7 @@ jobs:
         run: |
           version=$(grep '^version=' gradle.properties | cut -d'=' -f2)
           echo "current=$version" >> $GITHUB_OUTPUT
+          echo "Current version: $version"
 
       - name: Compute new release version
         id: bump
@@ -46,6 +47,7 @@ jobs:
           fi
           release_version="$major.$minor.$patch"
           echo "release_version=$release_version" >> $GITHUB_OUTPUT
+          echo "Release version: $release_version"
 
       - name: Update gradle.properties to release
         run: |
@@ -53,12 +55,15 @@ jobs:
 
       - name: Commit & tag release
         run: |
-          git config user.name github-actions
-          git config user.email actions@github.com
+          # commits are attributed to the human who clicked “Run workflow”
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor }}@users.noreply.github.com"
+          
           git add gradle.properties
           git commit -m "chore: bump version to v${{ steps.bump.outputs.release_version }}"
-          git tag v${{ steps.bump.outputs.release_version }}
           git push origin HEAD:main --follow-tags
+          git tag v${{ steps.bump.outputs.release_version }}
+          git push origin --tags
 
       - name: Compute next snapshot version
         id: next
