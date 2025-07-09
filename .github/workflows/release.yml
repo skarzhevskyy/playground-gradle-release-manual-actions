@@ -1,5 +1,8 @@
 name: Start release
 
+permissions:
+  contents: write        # grant the checkout/push steps write access to the repo
+
 on:
   workflow_dispatch:
     inputs:
@@ -21,6 +24,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          persist-credentials: true  # keep the GITHUB_TOKEN auth for pushes
+          fetch-depth: 0             # pull full history so tags & version bumps work
 
       - name: Read current version
         id: current
