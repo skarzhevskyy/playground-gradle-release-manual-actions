@@ -1,0 +1,73 @@
+name: Start release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump_type:
+        description: 'Which segment to bump?'
+        required: true
+        type: choice
+        # choices based on semver: patch → 1.2.3 → 1.2.4; minor → 1.2.3 → 1.3.0
+        options:
+          - patch
+          - minor
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Read current version
+        id: current
+        run: |
+          version=$(grep '^version=' gradle.properties | cut -d'=' -f2)
+          echo "current=$version" >> $GITHUB_OUTPUT
+
+      - name: Compute new release version
+        id: bump
+        run: |
+          IFS='.' read -r major minor patch <<< "${{ steps.current.outputs.current }}"
+          if [[ "${{ github.event.inputs.bump_type }}" == "minor" ]]; then
+            minor=$((minor+1))
+            patch=0
+          else
+            patch=$((patch+1))
+          fi
+          release_version="$major.$minor.$patch"
+          echo "release_version=$release_version" >> $GITHUB_OUTPUT
+
+      - name: Update gradle.properties to release
+        run: |
+          sed -E -i "s/^version=.*/version=${{ steps.bump.outputs.release_version }}/" gradle.properties
+
+      - name: Commit & tag release
+        run: |
+          git config user.name github-actions
+          git config user.email actions@github.com
+          git add gradle.properties
+          git commit -m "chore: bump version to v${{ steps.bump.outputs.release_version }}"
+          git tag v${{ steps.bump.outputs.release_version }}
+          git push origin HEAD:main --follow-tags
+
+      - name: Compute next snapshot version
+        id: next
+        run: |
+          IFS='.' read -r major minor patch <<< "${{ steps.bump.outputs.release_version }}"
+          patch=$((patch+1))
+          snapshot="$major.$minor.$patch-SNAPSHOT"
+          echo "snapshot=$snapshot" >> $GITHUB_OUTPUT
+
+      - name: Update gradle.properties to next snapshot
+        run: |
+          sed -E -i "s/^version=.*/version=${{ steps.next.outputs.snapshot }}/" gradle.properties
+
+      - name: Commit snapshot bump
+        run: |
+          git add gradle.properties
+          git commit -m "chore: bump to next development version ${{ steps.next.outputs.snapshot }}"
+          git push origin main

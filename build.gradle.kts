@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "com.example.playground-gradle-release-manual-actions"
-version = "0.0.1-SNAPSHOT"
+version = project.version
 
 java {
 	toolchain {
