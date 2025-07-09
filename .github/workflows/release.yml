@@ -1,0 +1,88 @@
+name: Automated Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: 'The version number for the new release (e.g., 1.0.0)'
+        required: true
+        type: string
+      next_snapshot_version:
+        description: 'The next development snapshot version (e.g., 1.0.1-SNAPSHOT)'
+        required: true
+        type: string
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Required to push commits, create tags, and create GitHub Releases
+      pull-requests: write # Required to create pull requests
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0 # Important: Fetches full history, needed by Gradle release plugin
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+
+    - name: Configure Git User and Email
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+
+    - name: Run Gradle Release Plugin
+      # This will update the version to release_version, commit, tag, and push.
+      # It will also update to next_snapshot_version locally but NOT push it.
+      run: ./gradlew release -PreleaseVersion=${{ github.event.inputs.release_version }} -PpostReleaseVersion=${{ github.event.inputs.next_snapshot_version }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build and Package Artifacts
+      # This step builds your project after the version has been updated to the release version
+      # and before the GitHub Release is created.
+      run: ./gradlew clean build
+
+    - name: Get Release Tag
+      id: get_release_tag
+      run: echo "TAG=$(git describe --tags --abbrev=0)" >> $GITHUB_OUTPUT
+
+    - name: Create Draft GitHub Release
+      uses: softprops/action-gh-release@v2
+      if: steps.get_release_tag.outputs.TAG != ''
+      with:
+        tag_name: ${{ steps.get_release_tag.outputs.TAG }}
+        name: Release ${{ steps.get_release_tag.outputs.TAG }}
+        body: |
+          ## Release Notes for ${{ steps.get_release_tag.outputs.TAG }}
+
+          This is an automated draft release. Please review the changes and publish when ready.
+
+          **Key Changes:**
+          * (Add your changelog content here, or use a separate action to generate it)
+          * See commit history for detailed changes.
+        draft: true
+        prerelease: false
+        files: |
+          build/libs/*.jar
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Create Pull Request for Next Snapshot Version
+      uses: peter-evans/create-pull-request@v6
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        commit-message: "Prepare for next development iteration (v${{ github.event.inputs.next_snapshot_version }})"
+        title: "Prepare for next development iteration (v${{ github.event.inputs.next_snapshot_version }})"
+        body: "This PR updates the project version to the next snapshot version after a release."
+        branch: "feature/next-snapshot-version-${{ github.event.inputs.next_snapshot_version }}"
+        delete-branch: true
+        base: "main"
