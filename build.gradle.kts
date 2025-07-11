@@ -19,7 +19,7 @@ repositories {
 }
 
 dependencies {
-	implementation("info.picocli:picocli:4.7.0")
+	implementation("info.picocli:picocli:4.7.7")
 }
 
 application {
