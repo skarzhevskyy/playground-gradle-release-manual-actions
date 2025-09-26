@@ -1,7 +1,7 @@
 plugins {
 	java
 	application
-	id("org.cyclonedx.bom") version "2.3.1"
+	id("org.cyclonedx.bom") version "2.4.1"
 	id("com.github.johnrengelman.shadow") version "8.1.1"
 }
 
